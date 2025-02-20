@@ -1,0 +1,71 @@
+# Build stage 
+FROM python:3.6 AS build
+
+# Adding GIT credentials as arguments to download dependencies from private Git repositories
+ARG GIT_USER_NAME
+ARG GIT_AUTH_TOKEN
+
+# Setting the working directory
+WORKDIR /app
+
+# Copying the requirements.txt file into the working directory
+COPY requirements.txt /app
+
+RUN apt-get update && apt-get install -y gnupg2 \
+    && echo "deb http://deb.debian.org/debian oldstable main contrib non-free" >> /etc/apt/sources.list \
+    && apt-get update \
+    && apt-get install -y libmcrypt-dev
+
+# Installing dependencies
+RUN sed -i 's|git+https://|git+https://${GIT_USER_NAME}:${GIT_AUTH_TOKEN}@|g' requirements.txt \
+    && pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+
+
+# <-----------------------------------------Next Stage Below------------------------------------------------>
+
+# Final stage
+FROM python:3.6-slim AS final
+
+
+# Define the json_log_path & application_log_path below
+# Take json_log_path value from env variables and put it here
+# application log path you can defined as below
+ENV JSON_LOG_PATH="/extra-01/logs/buy_api" \
+    APP_LOG_PATH="/home/myuser/logs/billing-api_3_6" \
+    STD_OUT_LOG_PATH="/application/logs/billing_api"
+
+ENV PYTHONPATH="$PYTHONPATH:/app/backend/smsmagic-api/"
+
+# Creating a non-root user with a home directory and creating directories to store json logs and application logs
+RUN useradd -ms /bin/bash myuser && \
+    mkdir -p ${JSON_LOG_PATH} ${APP_LOG_PATH} ${STD_OUT_LOG_PATH}
+
+# Installing packages and changing ownership of directories to 'myuser'
+RUN apt-get update && apt-get install libmariadb3 -y && \
+    rm -rf /var/lib/apt/lists/* && \
+    chown -R myuser:myuser ${JSON_LOG_PATH} ${APP_LOG_PATH} ${STD_OUT_LOG_PATH}
+
+# Switching to the user 'myuser'
+USER myuser
+
+WORKDIR /app
+
+
+# Copying files from the build stage and changing their ownership to 'myuser'
+COPY --chown=myuser:myuser --from=build  /usr/local /usr/local
+COPY --chown=myuser:myuser --from=build /app/requirements.txt /app/requirements.txt
+COPY --chown=myuser:myuser . /app
+
+CMD bash -c 'gunicorn run_apiengine:main_app \
+    --bind 0.0.0.0:5010 \
+    --log-level debug \
+    --workers 1 \
+    --timeout 30 \
+    --keep-alive 65 \
+    --worker-class gevent \
+    --worker-connections 256 \
+    --max-requests 1024 \
+    --max-requests-jitter 128 \
+    --backlog 2048 \
+    --log-file /application/logs/billing_api/gunicorn.log \
+    | tee /application/logs/billing_api/logging.log >&2'
