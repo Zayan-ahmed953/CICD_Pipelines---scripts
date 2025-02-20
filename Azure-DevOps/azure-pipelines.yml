@@ -1,3 +1,7 @@
+# This pipeline builds the docker image then pushes it to ACR and then it updates the deployment image to the latest one in AKS 
+
+#_________________________Start of pipeline__________________________#
+
 # Trigger the pipeline when changes are pushed to the 'main' branch.
 trigger:
   branches:
