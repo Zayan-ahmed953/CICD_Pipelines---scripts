@@ -1,0 +1,65 @@
+# Trigger the pipeline when changes are pushed to the 'main' branch.
+trigger:
+  branches:
+    include:
+      - main
+
+# Define the VM image to use for the build agent.
+pool:
+  vmImage: 'ubuntu-latest'
+
+# Define variables for reuse throughout the pipeline.
+variables:
+  # Name of your Azure Container Registry (ACR) without the domain suffix.
+  acrName: "youracrname"  
+  # Construct the full login server address for ACR.
+  acrLoginServer: "$(acrName).azurecr.io"
+  # Name of the Docker image (and repository) to be built and pushed.
+  imageName: "fip-webapp"
+  # Kubernetes namespace where the deployment exists.
+  kubernetesNamespace: "fip-webapp"
+  # Name of the Kubernetes deployment to update.
+  deploymentName: "fip-webapp-deploy"
+
+steps:
+# Step 1: Login to Azure to interact with ACR and AKS.
+- task: AzureCLI@2
+  displayName: "Login to Azure"
+  inputs:
+    # Replace with your actual Azure service connection name.
+    azureSubscription: "your-azure-service-connection"
+    scriptType: "bash"
+    scriptLocation: "inlineScript"
+    inlineScript: |
+      # Log in to Azure Container Registry using the ACR name.
+      az acr login --name $(acrName)
+
+# Step 2: Build and push the Docker image.
+- task: Docker@2
+  displayName: "Build and push Docker image"
+  inputs:
+    # This service connection should have permissions to push to your ACR.
+    containerRegistry: "your-azure-container-registry-service-connection"
+    repository: "$(imageName)"
+    command: "buildAndPush"
+    # Path to the Dockerfile in the root directory.
+    Dockerfile: "Dockerfile"
+    # Tag the image as 'latest' and also with the build ID for versioning.
+    tags: |
+      latest
+      $(Build.BuildId)
+
+# Step 3: Update the Kubernetes deployment with the new image.
+- task: AzureCLI@2
+  displayName: "Update Kubernetes deployment"
+  inputs:
+    azureSubscription: "your-azure-service-connection"
+    scriptType: "bash"
+    scriptLocation: "inlineScript"
+    inlineScript: |
+      # Retrieve credentials for the AKS cluster.
+      az aks get-credentials --resource-group yourresourcegroup --name yourakscluster
+      # Update the container image for the deployment.
+      kubectl set image deployment/$(deploymentName) $(imageName)=$(acrLoginServer)/$(imageName):$(Build.BuildId) -n $(kubernetesNamespace)
+      # Wait for the rollout to finish and confirm the deployment is updated.
+      kubectl rollout status deployment/$(deploymentName) -n $(kubernetesNamespace)
