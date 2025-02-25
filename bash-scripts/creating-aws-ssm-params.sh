@@ -1,12 +1,3 @@
-# To run the script provide the .snv file that only has the values for example Variable1=Value1
-# If theres a naming convention that needs to be on the start give that in the line no 16 of this script 
-
-# Before running the script you must have aws cli access to the aws account 
-
-# example run 
-
-# ./ssm.sh <path to env-file>
-
 #!/bin/bash
 
 echo "Select the environment by entering the corresponding number"
@@ -98,3 +89,13 @@ while IFS= read -r line; do
     \"Type\": \"SecureString\"
   }" $OVERWRITE_FLAG --region $AWS_REGION
 done < "${1}"
+
+
+# To run the script provide the .snv file that only has the values for example Variable1=Value1
+# If theres a naming convention that needs to be on the start give that in the line no 16 of this script 
+
+# Before running the script you must have aws cli access to the aws account 
+
+# example run 
+
+# ./ssm.sh <path to env-file>
