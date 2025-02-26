@@ -1,0 +1,48 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main  # Adjust as needed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+
+    - name: Install dependencies
+      run: npm install
+
+    # - name: Run tests (Optional)
+    #   run: npm test
+
+    - name: Setup SSH and Deploy
+      uses: appleboy/ssh-action@v0.1.10
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd /home/ec2-user/slack-app
+          git pull
+          systemctl restart ai-intern.service
+
+
+
+# This pipeline just deploys Nodejs app to an EC2 instance which has the secrets stored in repo secrets 
+# The secrets required are
+
+# EC2_HOST 		      --> 	Give publicIp of the ec2 
+# EC2_USER 		      --> 	Username of the ec2 for example ec2-user (for amazon linux) and ubuntu (for ubuntu)
+# SSH_PRIVATE_KEY 	--> 	paste the pem key file content
+
+# To store the secrets go to 
+# Repo Settings >> Secrets and Variables >> Actions >> Create new repo secret
