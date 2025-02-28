@@ -1,0 +1,64 @@
+# GitHub Actions pipeline automates the deployment of a Node.js web application to an EC2 instance whenever 
+# code is pushed to the feature/onboarding-flow branch. It checks out the latest code, installs dependencies, 
+# builds the project, and connects to the EC2 instance via SSH. On the EC2 server, it pulls the latest code, 
+# ensures Node.js and PM2 are installed, rebuilds the application, and restarts it using PM2 to apply the changes.
+
+name: Deploy WebApp
+
+on:
+  push:
+    branches:
+      - feature/onboarding-flow
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            # Load NVM if it exists
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            
+            # Navigate to project directory
+            cd /home/ubuntu/workspace/fip-webapp
+            
+            # Update code
+            git pull origin HEAD
+            
+            # Ensure node and npm are available
+            if ! command -v node &> /dev/null; then
+              echo "Installing Node.js and npm..."
+              curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+              export NVM_DIR="$HOME/.nvm"
+              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+              nvm install 20
+              nvm use 20
+            fi
+            
+            # Install pm2 globally if not present
+            if ! command -v pm2 &> /dev/null; then
+              echo "Installing pm2..."
+              npm install -g pm2
+            fi
+            
+            # Continue with deployment
+            npm install
+            pm2 stop all
+            rm -rf dist
+            npm run build
+            pm2 restart all
