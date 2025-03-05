@@ -1,0 +1,218 @@
+Summary:
+
+This guide sets up a Kubernetes environment on Azure using AKS. It helps you:
+
+      Create an AKS cluster with managed identity.
+      Set up NGINX Ingress to manage external traffic.
+      Deploy and expose HTTPD and NGINX services.
+      Configure a Load Balancer for stable traffic flow.
+
+By the end, you'll have a working AKS setup with ingress-based routing and a Load Balancer, ready to host applications.
+
+
+
+
+
+
+
+Step-1: Login to the Azure 
+az login
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+-----------------------------------------------
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+Step 2: Create an AKS Cluster
+Ensure you have Azure CLI installed and are logged in.
+# Set variables
+RESOURCE_GROUP="aks-test-rg"
+CLUSTER_NAME="aks-test-cluster"
+LOCATION="eastus"
+
+# Create a resource group
+az group create --name $RESOURCE_GROUP --location $LOCATION
+
+# Create AKS cluster with a system-assigned managed identity
+az aks create \
+    --resource-group $RESOURCE_GROUP \
+    --name $CLUSTER_NAME \
+    --node-count 2 \
+    --enable-managed-identity \
+    --generate-ssh-keys
+
+# Get AKS credentials
+az aks get-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER_NAME
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+-----------------------------------------------
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+Step-3: Install NGINX Ingress Controller
+We'll deploy the NGINX Ingress Controller using Helm.
+curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+
+helm install my-ingress ingress-nginx/ingress-nginx \
+  --namespace ingress-nginx --create-namespace
+
+
+Wait for the LoadBalancer service to get an external IP:
+kubectl get svc -n ingress-nginx
+
+Look for ingress-nginx-controller and note the EXTERNAL-IP. This will be your public entry point.
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+-----------------------------------------------
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+
+Step-4: Create Deployments and clusterIP svc 
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpd-deployment
+  namespace: ingress-nginx
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: httpd
+  template:
+    metadata:
+      labels:
+        app: httpd
+    spec:
+      containers:
+      - name: httpd
+        image: httpd:latest
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpd-service
+  namespace: ingress-nginx
+spec:
+  selector:
+    app: httpd
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+ 
+---
+
+# NGINX Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  namespace: ingress-nginx
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+  namespace: ingress-nginx
+spec:
+  selector:
+    app: nginx
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+-----------------------------------------------
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+
+Step-5: Create Ingress
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: test-ingress
+  namespace: ingress-nginx
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /nginx
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-service
+            port:
+              number: 80
+      - path: /httpd
+        pathType: Prefix
+        backend:
+          service:
+            name: httpd-service
+            port:
+              number: 80
+
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+-----------------------------------------------
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+
+
+Step-6: Update the LB settings 
+
+1- Update the health probe to /nginx for the http one (check after sometimes it could work for all paths, if not then continue)
+
+2- Create a new one with the same port for httpd 
+
+3- Go to Loadbalancing rules and create a new one 
+
+    	Sec FrontendIP
+    	Backend pool kubernetes 
+    	Protocol TCP
+    	Port 80
+    	Backend Port as the same NodePort for port 80
+    	Give your health probe
+    	Enable TCP Reset  	--> 	tick mark
+    	Enable Floating IP    --> 	tick mark
