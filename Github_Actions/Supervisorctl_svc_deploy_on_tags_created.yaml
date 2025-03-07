@@ -1,0 +1,53 @@
+name: Deploy to EC2
+
+on:
+  push:
+    tags:
+      - '*'  # Runs on any tag push
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run commands on EC2
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.DEV_FIP_FASTAPI_EC2_HOST }}
+          username: ${{ secrets.DEV_FIP_FASTAPI_EC2_USER }}
+          key: ${{ secrets.DEV_FIP_FASTAPI_EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/workspace/fip-fastapi
+
+            git checkout develop
+            git pull
+
+            set -x  # Enable debug mode
+            
+            # Extract service name from tag
+            SERVICE_NAME=$(echo ${{ github.ref }} | sed -E 's|refs/tags/([^/-]+).*|\1|')_service
+            
+            # Ensure SERVICE_NAME is set correctly
+            if [[ -z "$SERVICE_NAME" ]]; then
+              echo "ERROR: SERVICE_NAME is empty!"
+              exit 1
+            fi
+            
+            echo "Restarting service: $SERVICE_NAME"
+            sudo supervisorctl restart $SERVICE_NAME || { echo "Failed to restart $SERVICE_NAME"; exit 1; }
+            sudo supervisorctl status
+
+
+
+
+# This GitHub Actions pipeline deploys a FastAPI service on EC2 when a new tag is pushed. It:
+
+#     Checks out code from the repository.
+#     SSHs into EC2, navigates to the project directory, and pulls the latest changes.
+#     Extracts the service name from the tag using a naming convention where the tag starts with the service name (e.g., users-v1.0 → users_service).
+#     Restarts the service using supervisorctl and verifies its status.
+
+# This ensures seamless updates on every tagged release.
