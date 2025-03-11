@@ -1,0 +1,64 @@
+Summary:
+This guide automates the start and stop scheduling of EC2 instances using AWS EventBridge Scheduler. 
+
+
+
+Step1:
+
+Create a IAM role with FULL EC2 access and the following truts relationship 
+
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "scheduler.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+
+
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@
+-------------------------
+@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+
+
+
+Step2:
+
+Create a EventBridge Rule 
+	1- name it start instance 
+	2- Select Schedule in rule type 
+	3- Click on "Continue in EventBridge Scheduler"
+	4- Under "Schedule pattern" select "Recurring schedule"
+	5- Select your timezone
+	6- Give Cronjob (for any day of week use "?" not *)
+	7- Select a flexibe time window 
+	8- Under "Select target" select "All APIs" 
+	9- Search for EC2 and select "Amazon EC2"
+	10 Search for "StopInstances" and select "StopInstances"
+	11 Under "StopInstances" section give your instances IDs for example 
+	
+	{
+	  "InstanceIds": [
+	    "i-0abcd1234efgh5678",
+	    "i-0987xyz6543mnop21"
+	  ]
+	}
+	
+	12 Click "Next" and under "Action after schedule completion" select None (as per usecase)
+	13 Select the role you created in step 1 
+	14 Click on "Review and Create" and click "Create"
+	15 YOu will see your instance schedule rule in "Amazon EventBridge" >> "Schedules"
+	
+	
+Note:
+Just repeat the same for start instance rule and setup the Time and choose the start instance api in targets 
