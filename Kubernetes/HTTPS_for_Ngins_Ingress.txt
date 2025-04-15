@@ -1,0 +1,113 @@
+Pre-Requisites:
+
+You have the Ingress setup and your subdomains / domain is routing the traffic correctly to your Ingress
+
+
+
+
+
+
+
+
+1- We will install the cert-manager in our EKS cluster 
+
+	kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml
+	
+	It creates a NS called cert-manager with all the required cert-manager objects within it 
+
+
+
+
+##############################
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@#
+##############################
+
+
+
+
+2- Apply Cluster issuer using the folowing file 
+
+
+# cluster-issuer.yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: vp@marsdevs.com
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+      - http01:
+          ingress:
+            class: nginx
+
+
+
+kubectl apply -f cluster-issuer.yaml
+
+
+
+
+##############################
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@#
+##############################
+
+
+
+
+3- Modify your ingress.yaml file as following 
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-webapp
+  namespace: fip-webapp
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "21m"
+    cert-manager.io/cluster-issuer: letsencrypt-prod		#Add this annotation
+
+spec:
+  tls:								#Add this TLS part
+    - hosts:
+        - fipwebapp.marsdevs.com
+      secretName: fipwebapp-marsdevs-com-tls
+  ingressClassName: nginx
+  rules:
+  - host: fipwebapp.marsdevs.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: webapp-service
+            port:
+              number: 5173
+
+
+kubectl apply -f ingress.yaml
+
+
+
+
+##############################
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@#
+##############################
+
+
+
+
+4- Validate your Certificate 
+
+	kubectl get certificate -A
+	
+	NAMESPACE    NAME                         READY   SECRET                       AGE
+	fip-admin    fipadmin-marsdevs-com-tls    True    fipadmin-marsdevs-com-tls    26m
+	fip-webapp   fipwebapp-marsdevs-com-tls   True    fipwebapp-marsdevs-com-tls   21m
+	
+	
+	Make sure Ready is True
