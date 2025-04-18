@@ -1,0 +1,360 @@
+//This is a multibranch pipeline for tag based deployment 
+
+
+pipeline {
+    agent any
+
+    triggers {
+        GenericTrigger(
+            genericVariables: [
+                [key: 'ref', value: '$.ref'],
+                [key: 'before', value: '$.before'],
+                [key: 'after', value: '$.after'],
+                [key: 'repository.name', value: '$.repository.name'],
+                [key: 'repository.full_name', value: '$.repository.full_name'],
+                [key: 'tag_name', value: '$.ref', regexpFilter: '^refs/tags/(.*)$', defaultValue: '']
+            ],
+            causeString: 'Triggered by GitHub tag creation',
+            token: 'fip-fastapi-tag-trigger',
+            printContributedVariables: true,
+            printPostContent: true,
+            silentResponse: false,
+            regexpFilterText: '$ref',
+            regexpFilterExpression: '^refs/tags/.*$'
+        )
+    }
+
+    environment {
+        AWS_ACCOUNT_ID = '128638576479'
+        AWS_REGION = 'us-east-1'
+        CODE_REPO_URL = 'https://github.com/marsdevs-com/fip-fastapi'
+        MANIFEST_REPO_URL = 'https://github.com/marsdevs-com/fip-manifests'
+    }
+
+    stages {
+        stage('Global Variables') {
+            steps {
+                script {
+                    // Get the tag from the GitHub webhook trigger
+                    env.TAG_NAME = env.tag_name ?: sh(script: 'git describe --tags --exact-match || echo ""', returnStdout: true).trim()
+                    env.VERSION = sh(script: 'echo ${TAG_NAME} | sed -E "s/.*-v([0-9]+\\.[0-9]+\\.[0-9]+)/v\\1/"', returnStdout: true).trim()
+
+                    echo "Global Variables Set:"
+                    echo "TAG_NAME: ${env.TAG_NAME}"
+                    echo "VERSION: ${env.VERSION}"
+                }
+            }
+        }
+
+        stage('auth_service Prod Setup') {
+            when {
+                expression { return env.TAG_NAME.startsWith('auth-v') }
+            }
+            steps {
+                script {
+                    env.SERVICE_NAME = 'auth_service'
+                    env.ECR_REPOSITORY = 'fip-be-authservice'
+                    env.DOCKER_IMAGE_NAME = 'fip-be-authservice'
+                    env.ECR_REPOSITORY_URI = "${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}"
+                    env.BRANCH = "develop"
+                    env.MANIFEST_PATH = "Production/auth_service/auth.yaml"
+                    
+                    echo "Appx Service Environment Set:"
+                    echo "SERVICE_NAME: ${env.SERVICE_NAME}"
+                    echo "ECR_REPOSITORY: ${env.ECR_REPOSITORY}"
+                    echo "DOCKER_IMAGE_NAME: ${env.DOCKER_IMAGE_NAME}"
+                    echo "ECR_REPOSITORY_URI: ${env.ECR_REPOSITORY_URI}"
+                    echo "BRANCH: ${env.BRANCH}"
+                }
+            }
+        }
+
+        stage('comms_service Prod Setup') {
+            when {
+                expression { return env.TAG_NAME.startsWith('comms-v') }
+            }
+            steps {
+                script {
+                    env.SERVICE_NAME = 'comms_service'
+                    env.ECR_REPOSITORY = 'fip-be-comms'
+                    env.DOCKER_IMAGE_NAME = 'fip-be-comms'
+                    env.ECR_REPOSITORY_URI = "${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}"
+                    env.BRANCH = "develop"
+                    env.MANIFEST_PATH = "Production/comms_service/comms.yaml"
+                    
+                    echo "Appx Service Environment Set:"
+                    echo "SERVICE_NAME: ${env.SERVICE_NAME}"
+                    echo "ECR_REPOSITORY: ${env.ECR_REPOSITORY}"
+                    echo "DOCKER_IMAGE_NAME: ${env.DOCKER_IMAGE_NAME}"
+                    echo "ECR_REPOSITORY_URI: ${env.ECR_REPOSITORY_URI}"
+                    echo "BRANCH: ${env.BRANCH}"
+                }
+            }
+        }
+
+
+        stage('connection_service Prod Setup') {
+            when {
+                expression { return env.TAG_NAME.startsWith('connection-v') }
+            }
+            steps {
+                script {
+                    env.SERVICE_NAME = 'connection_service'
+                    env.ECR_REPOSITORY = 'fip-be-connection'
+                    env.DOCKER_IMAGE_NAME = 'fip-be-connection'
+                    env.ECR_REPOSITORY_URI = "${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}"
+                    env.BRANCH = "develop"
+                    env.MANIFEST_PATH = "Production/connection_service/connection.yaml"
+                    
+                    echo "Appx Service Environment Set:"
+                    echo "SERVICE_NAME: ${env.SERVICE_NAME}"
+                    echo "ECR_REPOSITORY: ${env.ECR_REPOSITORY}"
+                    echo "DOCKER_IMAGE_NAME: ${env.DOCKER_IMAGE_NAME}"
+                    echo "ECR_REPOSITORY_URI: ${env.ECR_REPOSITORY_URI}"
+                    echo "BRANCH: ${env.BRANCH}"
+                }
+            }
+        }
+
+
+        stage('consultation_service Prod Setup') {
+            when {
+                expression { return env.TAG_NAME.startsWith('consultation-v') }
+            }
+            steps {
+                script {
+                    env.SERVICE_NAME = 'consultation'
+                    env.ECR_REPOSITORY = 'fip-be-consultation'
+                    env.DOCKER_IMAGE_NAME = 'fip-be-consultation'
+                    env.ECR_REPOSITORY_URI = "${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}"
+                    env.BRANCH = "develop"
+                    env.MANIFEST_PATH = "Production/consultation_service/consultation.yaml"
+                    
+                    echo "Appx Service Environment Set:"
+                    echo "SERVICE_NAME: ${env.SERVICE_NAME}"
+                    echo "ECR_REPOSITORY: ${env.ECR_REPOSITORY}"
+                    echo "DOCKER_IMAGE_NAME: ${env.DOCKER_IMAGE_NAME}"
+                    echo "ECR_REPOSITORY_URI: ${env.ECR_REPOSITORY_URI}"
+                    echo "BRANCH: ${env.BRANCH}"
+                }
+            }
+        }
+
+
+        stage('dataroom_service Prod Setup') {
+            when {
+                expression { return env.TAG_NAME.startsWith('dataroom-v') }
+            }
+            steps {
+                script {
+                    env.SERVICE_NAME = 'dataroom'
+                    env.ECR_REPOSITORY = 'fip-be-dataroom'
+                    env.DOCKER_IMAGE_NAME = 'fip-be-dataroom'
+                    env.ECR_REPOSITORY_URI = "${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}"
+                    env.BRANCH = "develop"
+                    env.MANIFEST_PATH = "Production/dataroom_service/dataroom.yaml"
+                    
+                    echo "Appx Service Environment Set:"
+                    echo "SERVICE_NAME: ${env.SERVICE_NAME}"
+                    echo "ECR_REPOSITORY: ${env.ECR_REPOSITORY}"
+                    echo "DOCKER_IMAGE_NAME: ${env.DOCKER_IMAGE_NAME}"
+                    echo "ECR_REPOSITORY_URI: ${env.ECR_REPOSITORY_URI}"
+                    echo "BRANCH: ${env.BRANCH}"
+                }
+            }
+        }
+
+
+        stage('feed_service Prod Setup') {
+            when {
+                expression { return env.TAG_NAME.startsWith('feed-v') }
+            }
+            steps {
+                script {
+                    env.SERVICE_NAME = 'feed_service'
+                    env.ECR_REPOSITORY = 'fip-be-feed'
+                    env.DOCKER_IMAGE_NAME = 'fip-be-feed'
+                    env.ECR_REPOSITORY_URI = "${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}"
+                    env.BRANCH = "develop"
+                    env.MANIFEST_PATH = "Production/feed_service/feed.yaml"
+                    
+                    echo "Appx Service Environment Set:"
+                    echo "SERVICE_NAME: ${env.SERVICE_NAME}"
+                    echo "ECR_REPOSITORY: ${env.ECR_REPOSITORY}"
+                    echo "DOCKER_IMAGE_NAME: ${env.DOCKER_IMAGE_NAME}"
+                    echo "ECR_REPOSITORY_URI: ${env.ECR_REPOSITORY_URI}"
+                    echo "BRANCH: ${env.BRANCH}"
+                }
+            }
+        }
+
+
+        stage('gateway_service Prod Setup') {
+            when {
+                expression { return env.TAG_NAME.startsWith('gateway-v') }
+            }
+            steps {
+                script {
+                    env.SERVICE_NAME = 'gateway_service'
+                    env.ECR_REPOSITORY = 'fip-be-gateway'
+                    env.DOCKER_IMAGE_NAME = 'fip-be-gateway'
+                    env.ECR_REPOSITORY_URI = "${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}"
+                    env.BRANCH = "develop"
+                    // env.MANIFEST_PATH = "gateway_service/manifests/feed.yaml" currently doesnt exists
+                    
+                    echo "Appx Service Environment Set:"
+                    echo "SERVICE_NAME: ${env.SERVICE_NAME}"
+                    echo "ECR_REPOSITORY: ${env.ECR_REPOSITORY}"
+                    echo "DOCKER_IMAGE_NAME: ${env.DOCKER_IMAGE_NAME}"
+                    echo "ECR_REPOSITORY_URI: ${env.ECR_REPOSITORY_URI}"
+                    echo "BRANCH: ${env.BRANCH}"
+                }
+            }
+        }
+
+
+        // stage('RandomWebApp Service Setup') {
+        //     when {
+        //         expression { return env.TAG_NAME.startsWith('randomwebapp-v') }
+        //     }
+        //     steps {
+        //         script {
+        //             env.SERVICE_NAME = 'randomwebapp'
+        //             env.ECR_REPOSITORY = 'randomwebapp'
+        //             env.DOCKER_IMAGE_NAME = 'randomwebapp'
+        //             env.ECR_REPOSITORY_URI = "${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/randomwebapp"
+        //             env.BRANCH = "main"
+        //             env.MANIFEST_PATH = "${env.SERVICE_NAME}/manifests/deployment.yml"
+
+        //             echo "RandomWebApp Service Environment Set:"
+        //             echo "SERVICE_NAME: ${env.SERVICE_NAME}"
+        //             echo "ECR_REPOSITORY: ${env.ECR_REPOSITORY}"
+        //             echo "DOCKER_IMAGE_NAME: ${env.DOCKER_IMAGE_NAME}"
+        //             echo "ECR_REPOSITORY_URI: ${env.ECR_REPOSITORY_URI}"
+        //         }
+        //     }
+        // }
+
+        stage('Checkout Code Repository') {
+            steps {
+                script {
+                    if (!env.BRANCH) {
+                        error "BRANCH environment variable is not set. Please ensure the correct service setup stage has run."
+                    }
+                    echo "Checking out code repository branch: ${env.BRANCH}"
+                    git branch: env.BRANCH, credentialsId: 'github-token-1', url: env.CODE_REPO_URL
+                }
+            }
+        }
+        
+
+        // stage('Configure AWS Credentials') {
+        //     steps {
+        //         withCredentials([[
+        //             $class: 'AmazonWebServicesCredentialsBinding',
+        //             credentialsId: 'aws-credentials',
+        //             accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+        //             secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+        //         ]]) {
+        //             script {
+        //                 echo "AWS credentials configured"
+        //                 sh '''
+        //                     aws --version
+        //                     aws configure list
+        //                     echo "AWS_REGION: $AWS_REGION"
+        //                     echo "AWS_ACCOUNT_ID: $AWS_ACCOUNT_ID"
+        //                     echo "SERVICE_NAME: $SERVICE_NAME"
+        //                     echo "TAG_NAME: $TAG_NAME"
+        //                     aws sts get-caller-identity
+        //                 '''
+        //             }
+        //         }
+        //     }
+        // }
+
+        stage('Login to ECR') {
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-credentials',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
+                    script {
+                        sh '''
+                            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Build and Push Docker Image') {
+            steps {
+                script {
+                    sh '''
+                        pwd
+                        ls -ltrh
+                        git checkout ${BRANCH}
+                        git branch -a 
+                        echo "Building Docker image for service: $SERVICE_NAME with version: $VERSION"
+                        docker build -t $ECR_REPOSITORY/$DOCKER_IMAGE_NAME:$VERSION $SERVICE_NAME
+                        docker tag $ECR_REPOSITORY/$DOCKER_IMAGE_NAME:$VERSION $ECR_REPOSITORY/$DOCKER_IMAGE_NAME:latest
+                        docker tag $ECR_REPOSITORY/$DOCKER_IMAGE_NAME:$VERSION $ECR_REPOSITORY_URI:$VERSION
+                        docker tag $ECR_REPOSITORY/$DOCKER_IMAGE_NAME:latest $ECR_REPOSITORY_URI:latest
+                        docker push $ECR_REPOSITORY_URI:$VERSION
+                        docker push $ECR_REPOSITORY_URI:latest
+                    '''
+                }
+            }
+        }
+
+        stage('Update Deployment Manifest') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'github-token-1', usernameVariable: 'GITHUB_USERNAME', passwordVariable: 'GITHUB_TOKEN')]) {
+                    script {
+                        // Clone manifest repository
+                        sh '''
+                            git clone https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/marsdevs-com/fip-fastapi-manifests.git fip-fastapi-manifests
+                            cd fip-fastapi-manifests
+                            git checkout main
+                        '''
+
+                        // Read and update manifest file
+                        def manifestContent = readFile("fip-fastapi-manifests/${env.MANIFEST_PATH}")
+                        
+                        def updatedContent = manifestContent.replaceAll(
+                            'image:.*:.*',
+                            "image: ${env.ECR_REPOSITORY_URI}:${env.VERSION}"
+                        )
+                        
+                        writeFile file: "fip-fastapi-manifests/${env.MANIFEST_PATH}", text: updatedContent
+                        
+                        // Commit and push changes to manifest repository
+                        sh '''
+                            cd fip-fastapi-manifests
+                            git config user.email "jenkins@example.com"
+                            git config user.name "Jenkins"
+                            git add ${MANIFEST_PATH}
+                            git commit -m "Update ${SERVICE_NAME} deployment manifest to version ${VERSION}"
+                            git push https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/marsdevs-com/fip-fastapi-manifests.git main
+                        '''
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+            echo "Cleaning workspace"
+        }
+        success {
+            echo "Build and deployment pipeline completed successfully for service: ${env.SERVICE_NAME} with tag: ${env.TAG_NAME}"
+        }
+        failure {
+            echo "Build or deployment failed for service: ${env.SERVICE_NAME} with tag: ${env.TAG_NAME}"
+        }
+    }
+}
