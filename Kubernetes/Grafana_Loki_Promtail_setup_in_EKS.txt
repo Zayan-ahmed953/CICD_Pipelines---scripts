@@ -1,0 +1,131 @@
+Install EBS CSI driver
+
+helm upgrade --install aws-ebs-csi-driver aws-ebs-csi-driver/aws-ebs-csi-driver \
+  --namespace kube-system \
+  --create-namespace \
+  --set enableVolumeScheduling=true \
+  --set enableVolumeResizing=true \
+  --set enableVolumeSnapshot=true \
+  --set controller.serviceAccount.create=true \
+  --set controller.serviceAccount.name=ebs-csi-controller-sa \
+  --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=arn:aws:iam::<ACCOUNT_ID>:role/<IAM_ROLE_NAME>
+
+
+
+
+
+
+Grant the IAM role created for EBSCSI driver access to create EBS volumes 
+
+
+ 
+
+
+
+
+
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+
+
+
+kubectl create ns loki
+
+helm upgrade --install loki-stack grafana/loki-stack \
+  --namespace=loki \
+  --set grafana.enabled=true \
+  --set promtail.enabled=true \
+  --set loki.enabled=true
+
+
+
+
+
+
+Create a file named loki-stack-values.yaml
+
+grafana:
+  enabled: true
+
+promtail:
+  enabled: true
+
+loki:
+  enabled: true
+  image:
+    tag: "2.9.7"
+  config:
+    server:
+      # bind both HTTP and gRPC on all interfaces
+      http_listen_address: "0.0.0.0"
+      grpc_listen_address: "0.0.0.0"
+
+  # explicitly disable the built-in probes
+  readinessProbe:
+    enabled: false
+  livenessProbe:
+    enabled: false
+
+  persistence:
+    enabled: true
+    storageClassName: gp2       # or your custom EBS StorageClass name (e.g., "ebs-sc")
+    accessModes:
+      - ReadWriteOnce
+    size: 20Gi
+    
+    
+    
+    
+    
+    
+    
+    
+    
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+
+helm upgrade --install loki-stack grafana/loki-stack \
+  --namespace=loki \
+  --create-namespace \
+  -f loki-stack-values.yaml
+
+
+
+
+
+
+
+
+
+
+
+kubectl edit svc loki-stack-grafana -n loki
+
+spec:
+  type: LoadBalancer
+
+
+
+
+
+
+kubectl get svc loki-stack-grafana -n loki
+
+
+
+
+
+http://<your-alb-dns-name>
+
+may take 2 mins to work 
+
+
+
+
+
+
+
+Get password 
+kubectl get secret --namespace=loki loki-stack-grafana -o jsonpath="{.data.admin-password}" | base64 --decode
+
+username: admin
