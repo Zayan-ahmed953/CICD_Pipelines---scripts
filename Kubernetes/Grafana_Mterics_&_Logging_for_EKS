@@ -1,0 +1,185 @@
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+
+# Create namespace for monitoring
+kubectl create namespace monitoring
+
+# Install the stack
+helm install prometheus-stack prometheus-community/kube-prometheus-stack \
+  --namespace monitoring
+
+
+
+
+
+
+
+
+kubectl patch svc prometheus-stack-grafana \
+  -n monitoring \
+  -p '{"spec": {"type": "LoadBalancer"}}'
+
+
+
+
+
+
+
+
+
+kubectl get svc prometheus-stack-grafana -n monitoring
+
+
+may take 5 mins to open for the first time 
+
+
+
+
+
+
+kubectl get secret --namespace monitoring prometheus-stack-grafana \
+  -o jsonpath="{.data.admin-password}" | base64 --decode
+
+
+
+
+
+
+
+
+GO TO DASHBOARD >> SEARCH FOR Node Exporter / Nodes
+
+
+
+
+
+
+
+
+
+
+
+Logging part:
+
+Install EBSCSI driver 
+
+eksctl create addon   --name aws-ebs-csi-driver   --cluster my-cluster   --region us-west-2   --service-account-role-arn arn:aws:iam::084828598848:role/AmazonEKS_EBS_CSI_DriverRole
+
+
+
+
+
+
+
+
+
+
+
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+
+helm upgrade --install loki grafana/loki-stack \
+  -n monitoring \
+  -f loki-stack-values.yaml
+
+
+
+
+
+
+
+
+
+sample loki-stack-values.yaml
+
+grafana:
+  enabled: true
+
+promtail:
+  enabled: true
+
+loki:
+  enabled: true
+  image:
+    tag: "2.9.7"
+  config:
+    server:
+      # bind both HTTP and gRPC on all interfaces
+      http_listen_address: "0.0.0.0"
+      grpc_listen_address: "0.0.0.0"
+
+  # explicitly disable the built-in probes
+  readinessProbe:
+    enabled: false
+  livenessProbe:
+    enabled: false
+
+  persistence:
+    enabled: true
+    storageClassName: gp2       # or your custom EBS StorageClass name (e.g., "ebs-sc")
+    accessModes:
+      - ReadWriteOnce
+    size: 20Gi
+
+
+
+
+Note: 
+If the loki pod gets stuck in pending wothout any events then check the logs of ebs-csi driver controller pod logs in kube-system ns 
+and attach the EC2-Full access to the sa being used by ebscsi driver shown in its logs 
+
+Then after 2 to 4 mins I would run and be in ready state 
+
+
+
+
+
+
+
+
+
+
+
+Now you can add the loki as the data source in grafana and use the loki named svc with port 3100
+
+http://loki:3100
+
+
+
+
+
+
+
+
+Alerting 
+
+We need to add the smtp configuration to our graffana 
+
+1 - Generate app password for the google account you need grafana to send email alerts from (2FA must be enabled first)
+https://myaccount.google.com/apppasswords
+
+
+
+2- Edit the grafana configmap to setup smtp, under the grafana.ini add the following 
+
+kubectl edit configmap prometheus-stack-grafana -n monitoring
+
+    [smtp]
+    enabled = true
+    host = smtp.gmail.com:587
+    user = za357627acc1@gmail.com		#graffana gaccount gmail address
+    password = qtnnkqmoausqnfkc			#App password for graffana g account
+    from_address = za357627acc1@gmail.com	#graffana gaccount gmail address
+    startTLS_policy = OpportunisticStartTLS
+
+
+
+3- Delete these 2 pods to restart the new ones 
+
+kubectl delete pod loki-promtail-d7924 prometheus-stack-grafana-ccf747dc6-558k7 -n monitoring
+
+
+4- Now you can add an alert after adding the contact point 
+
+
+5- 
