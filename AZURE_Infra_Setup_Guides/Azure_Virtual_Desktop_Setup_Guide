@@ -1,0 +1,32 @@
+Summary:
+
+Create a Azure Virtual Desktop setup for Windows to let your users login to a full desktop exp from anywhere in the world 
+
+____________________________________________________________
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+------------------------------------------------------------
+
+1- Create a RG (all resources will be created under this RG)
+2- Create a Vnet in the given region where you need AVD (Azure Virtual Desktop)
+3- In Azure Search for Azure Virtual Desktop
+4- Create a Hostpool and keep Application type as Desktop (for complete dektop experience)
+5- It will automatically create a Application 
+6- Navigate to your AVD (Azure Virtual Desktop) >> Applications >> Your Desktop Applicatoin >> Assignment >> Assign the user you want to have access to our Windows 
+7- Navigate to AVD >> Workspaces >> Create a new one within same region and RG >> Add your application (Desktop)
+8- Navigate to Resource Groups >> IAM >> Add >> Search for "Virtual Machine" >> Select "Virtual Machine Administrator Login" or "Virtual Machine User Login" as per your need
+9- Click Next and select your users / Groups >> Review and Assign 
+10- Navigate to AVD >> Hostpool >> Click on your HP >> Settings >> RDP Properties >> 
+
+Microsoft Entra single sign-on: 	Connections will use Microsoft Entra authentication to provide single sign-on
+Credential Security Support Provider:   RDP will use CredSSP if the operating system supports CredSSP (default)
+
+Click Save
+
+11- Now in your new tab open https://rdweb.wvd.microsoft.com/arm/webclient 
+12- Click on your Desktop and login and Enjoy :)
+
+____________________________________________________________
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+------------------------------------------------------------
+
+Full YT video Guide: https://youtu.be/ol2Nyfm4ziY?si=bPe681blOLQC4eZr (Its Awesome)
