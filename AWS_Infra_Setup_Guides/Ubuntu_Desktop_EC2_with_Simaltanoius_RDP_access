@@ -1,0 +1,55 @@
+In this Guide we are setting up ubuntu Desktop along with simaltanoeus access using RDP and xrdp
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+--------------------------------------------------------------------
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+1- Launch an ec2 instamce of atleast t3.medium size with 30GB storage with port 3389 open
+2- Run the following commands
+	sudo apt update
+	sudo apt install -y xfce4 xfce4-goodies
+	
+3- Setup the RDP access, run the following commands one by one
+	sudo apt install -y xrdp
+	sudo systemctl enable xrdp
+	sudo systemctl start xrdp
+	
+4- Set the default session for RDP
+	echo xfce4-session > ~/.xsession
+	
+5- Add user to ssl-cert group
+	sudo adduser xrdp ssl-cert
+	
+6- Set a password for your Ubuntu user so you can log in:
+	sudo passwd ubuntu
+	
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+--------------------------------------------------------------------
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+
+
+TO ADD A NEW USER FOR SIMALTANIOUS RDP ACCESS DO THE FOLLOWING
+
+1- Once the above setup is done, run the follwing 
+	sudo adduser user1
+	sudo usermod -aG sudo user1
+	
+2- Switch to the newly added user 
+	sudo -u user1 -i
+	
+3- Add a desktop session
+	echo "startxfce4" > ~/.xsession
+	chmod +x ~/.xsession
+	
+Now connect using Remote Desktop (RDP) to your EC2’s public IP.
+
+    Use RDP clients like Windows’ built-in Remote Desktop Connection.
+
+    Login as user1 from one device.
