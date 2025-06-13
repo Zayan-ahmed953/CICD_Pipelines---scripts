@@ -26,7 +26,8 @@ In this Guide we are setting up ubuntu Desktop along with simaltanoeus access us
 6- Set a password for your Ubuntu user so you can log in:
 	sudo passwd ubuntu
 	
-
+7- Reboot your instance 
+	sudo reboot
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 --------------------------------------------------------------------
