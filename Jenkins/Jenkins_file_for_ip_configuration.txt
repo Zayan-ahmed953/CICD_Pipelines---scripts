@@ -1,0 +1,4 @@
+/var/lib/jenkins/jenkins.model.JenkinsLocationConfiguration.xml
+
+
+THis is the jenkins conf file in jenkins server which has the configuration regarding the jenkins IP
