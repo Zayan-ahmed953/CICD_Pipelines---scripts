@@ -1,0 +1,11 @@
+1- Create a dest bucket which will store the compressed media
+2- Upload the given ffmpeg-layer.zip to the dest bucket 
+3- Create a lambda layer and select the s3 
+4- Give the https path for the ffmped.zip file in the s3 
+5- Create another lambda layer and upload this zip file Pillow_layer-4d4ab2f6-3fb5-4336-b6f5-ba3385c88929.zip
+6- Create a lambda function and paste the given code in lambda-function.py update the dest bucket name at line no 10
+7- Configure the fucntion and set timeout to 5 mins and mem as 2048MB along with the storage
+8- Add the lambda functions we just created to your lambda function
+9- Add a trigger bucket and select all crate events 
+10- Update the lambda fucntion IAM svc sccount and add s3 full access permission
+11- test your setup by uploadingto the source s3 bucket
