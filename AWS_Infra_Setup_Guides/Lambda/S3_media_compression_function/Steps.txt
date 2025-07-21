@@ -9,3 +9,41 @@
 9- Add a trigger bucket and select all crate events 
 10- Update the lambda fucntion IAM svc sccount and add s3 full access permission
 11- test your setup by uploadingto the source s3 bucket
+
+
+
+
+
+
+
+ffmped.zip file creation steps:
+
+✅ Step 1: Launch EC2 Instance
+Launch Amazon Linux 2 EC2 instance (t2.micro is fine).
+
+Connect via SSH.
+
+✅ Step 2: Install Dependencies
+
+sudo yum update -y
+sudo yum install -y gcc gcc-c++ make git autoconf automake cmake openssl-devel
+✅ Step 3: Build FFmpeg (static binary)
+
+mkdir -p ~/ffmpeg_build ~/ffmpeg_sources ~/bin
+cd ~/ffmpeg_sources
+git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg
+cd ffmpeg
+./configure --prefix="$HOME/ffmpeg_build" --disable-debug --disable-doc --disable-ffplay --enable-static --disable-shared
+make -j$(nproc)
+make install
+
+✅ Step 4: Create Lambda Layer Structure
+
+mkdir -p ~/lambda-layer/bin
+cp ~/ffmpeg_build/bin/ffmpeg ~/lambda-layer/bin/
+cp ~/ffmpeg_build/bin/ffprobe ~/lambda-layer/bin/
+
+✅ Step 5: Zip the Layer
+
+cd ~/lambda-layer
+zip -r9 ffmpeg.zip .
