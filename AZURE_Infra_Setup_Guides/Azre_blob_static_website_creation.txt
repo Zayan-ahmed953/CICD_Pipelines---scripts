@@ -1,0 +1,7 @@
+1- Create a Storage account
+2- Inside your storage account, from the left menu under Data Managment section click on Static website and enable it
+3- Enter the main index.html file name and the error.html file 
+4- Click save
+5- When static website is enabled azure automatically creates a $web azure blob container by default 
+6- Now to upload your files to this container storage account -> blob containers -> $web -> upload
+7- Once you have uploaded your files opne the link given in step 4 
