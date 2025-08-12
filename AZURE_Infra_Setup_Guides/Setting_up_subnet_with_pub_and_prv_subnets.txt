@@ -1,0 +1,7 @@
+1- Create a NAT gateway and select no Subnets to attach it with 
+2- Create your Vnet with pub and prv subnets (just diff names no settings yet)
+3- Create 2 NSGs one for PUB_SUBNET and one for PRV_SUBNET
+4- In the NSG for PRV SUBNET add an Inbound rule which only allows traffic from your pub subnets CIDRs, and then attach this PRV_SUBNET with your PRV_SUBNET
+5- For the NSG for pub subnet add an Inbound rule allowing traffic like SSH from your IPs or sources you need to access pub subnet machines from
+6- Now go to your NAT gateway and select the subnets and then attach your prv subnets with it
+7- Now you can create VMs in your prv subnet without selecting any pub IPs but when you create any VMs in your pub subnet you will have to select Public IPs for the machines
