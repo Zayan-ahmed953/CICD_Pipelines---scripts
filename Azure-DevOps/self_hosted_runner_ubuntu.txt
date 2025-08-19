@@ -1,0 +1,47 @@
+Azure self hosted ubuntu runner 
+
+
+
+1- Create a Azure DevOps PAT 
+
+
+
+2- Create the dir azagent and enter it
+
+mkdir azagent 
+cd azagent
+
+3- INstall the runner file 
+
+https://download.agent.dev.azure.com/agent/4.259.0/vsts-agent-linux-x64-4.259.0.tar.gz
+
+4- Copy the downloaded file to azagent dir 
+
+5- Unzip it 
+
+tar zxvf vsts-agent-linux-x64-4.259.0.tar.gz
+
+
+
+6- Run the main setup script 
+
+./config.sh
+
+
+Pass in the URL --> https://dev.azure.com/zayanahmad384
+Pass the PAT --> from step 1
+
+
+7- INstall it 
+
+sudo ./svc.sh install
+
+
+
+
+8- Run it 
+
+9- sudo ./svc.sh start
+
+
+10- sudo ./svc.sh status
