@@ -1,0 +1,66 @@
+Setting up pipeline for azure app servce 
+
+
+
+1- Go to azure devops 
+
+2- Create a service connection for your pipeline to access azure app service 
+
+3- Create a Pipeline give your github and your pool name etc 
+
+The pipeline uses github commit hash for tag 
+
+
+Pipeline:
+
+
+trigger:
+- main
+
+resources:
+- repo: self
+
+variables:
+  dockerRegistryServiceConnection: '98d710ec-b30a-4e87-b6ac-1c98f2a0ff34'
+  imageRepository: 'cartoonanimationweb'
+  containerRegistry: 'globalllyuniqueeen43.azurecr.io'
+  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
+
+stages:
+- stage: Build
+  displayName: Build and push stage
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      name: MyLaptopPool   # ✅ use your self-hosted pool name
+    steps:
+    - checkout: self
+
+    # Extract short commit hash
+    - script: |
+        echo "##vso[task.setvariable variable=commitHash]$(echo $(Build.SourceVersion) | cut -c1-7)"
+      displayName: Set short git commit hash
+
+    - task: Docker@2
+      displayName: Build and push an image to container registry
+      inputs:
+        command: buildAndPush
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(commitHash)
+          latest
+
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'appserviceconnection'   # 👈 service connection name
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az webapp config container set \
+            --name cartoonapp \
+            --resource-group ingress_RG \
+            --docker-custom-image-name "$(containerRegistry)/$(imageRepository):$(commitHash)" \
+            --docker-registry-server-url "https://$(containerRegistry)"
