@@ -1,4 +1,5 @@
 # Build stagetttttt 
+#New commit
 FROM python:3.6 AS build
 
 # Adding GIT credentials as arguments to download dependencies from private Git repositories
