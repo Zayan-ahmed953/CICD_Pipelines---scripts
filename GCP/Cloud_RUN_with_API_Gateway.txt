@@ -1,0 +1,47 @@
+1- Create CLoud runs your containers must run on port 8080 (use nginx proxy)
+2- Create API in API Gateway svc 
+3- Create a service account without any permissions for api gateway
+4- Create your api config using the yaml file
+gcloud api-gateway api-configs create my-api-config-v2 \
+  --api=my-api \
+  --openapi-spec=my-api-config.yml \
+  --project=updeed-a20ab \
+  --backend-auth-service-account=api-gateway-sa@updeed-a20ab.iam.gserviceaccount.com
+
+5- Run the following commands to give API Gateway poermissions to cloud run 
+for example:
+gcloud run services add-iam-policy-binding cartoon \
+  --member="serviceAccount:api-gateway-sa@updeed-a20ab.iam.gserviceaccount.com" \
+  --role="roles/run.invoker" \
+  --region=europe-west1
+
+gcloud run services add-iam-policy-binding hello \
+  --member="serviceAccount:api-gateway-sa@updeed-a20ab.iam.gserviceaccount.com" \
+  --role="roles/run.invoker" \
+  --region=europe-west1
+
+
+
+
+
+
+Other useful commands
+
+API Gateway config update command
+
+gcloud api-gateway api-configs create my-api-config-v3 \
+  --api=my-api \
+  --openapi-spec=my-api-config.yml \
+  --project=updeed-a20ab \
+  --backend-auth-service-account=api-gateway-sa@updeed-a20ab.iam.gserviceaccount.com
+  
+  
+  
+  
+  
+  
+  
+API Gateway update command for new config 
+
+gcloud api-gateway gateways update my-gateway \
+  --api=my-api --api-config=my-api-config-v3 --location=europe-west1
