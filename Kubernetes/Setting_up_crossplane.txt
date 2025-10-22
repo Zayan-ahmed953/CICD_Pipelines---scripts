@@ -1,0 +1,95 @@
+1- Install cross plane 
+
+helm repo add crossplane-stable https://charts.crossplane.io/stable
+helm repo update
+helm install crossplane crossplane-stable/crossplane --namespace crossplane-system --create-namespace
+
+
+
+
+2- Installs in a ns 
+
+kubectl get pods -n crossplane-system
+
+
+
+
+3- Install crossplane CLI on local 
+
+curl -sL https://raw.githubusercontent.com/crossplane/crossplane/master/install.sh | sh
+sudo mv crossplane /usr/local/bin/
+
+
+
+
+4- For AWS we will install AWS provider
+
+crossplane xpkg install provider xpkg.upbound.io/crossplane-contrib/provider-aws:v0.47.0
+
+
+kubectl get providers
+
+
+
+5- Provide AWS Access keys via K8s secrets 
+
+cat > aws-credentials.txt <<EOF
+[default]
+aws_access_key_id=AK***
+aws_secret_access_key=ceU***A
+region=us-east-1
+EOF
+
+
+kubectl create secret generic aws-creds -n crossplane-system --from-file=credentials=./aws-credentials.txt
+
+
+kubectl get secret aws-creds -n crossplane-system -o jsonpath='{.data.credentials}' | base64 --decode
+
+
+SHould see:
+
+[default]
+aws_access_key_id=AK***
+aws_secret_access_key=ce***wA
+region=us-east-1
+
+
+
+6- Create a ProviderConfig which will tell corss plane which Provider and what creds to use 
+
+apiVersion: aws.crossplane.io/v1beta1
+kind: ProviderConfig
+metadata:
+  name: aws-provider
+spec:
+  credentials:
+    source: Secret
+    secretRef:
+      namespace: crossplane-system
+      name: aws-creds
+      key: credentials
+
+
+kubectl apply -f providerconfig.yml
+
+
+
+7- Start creating your resources
+
+apiVersion: s3.aws.crossplane.io/v1beta1
+kind: Bucket
+metadata:
+  name: demo-crossplane-bucket-u7d98sa
+spec:
+  forProvider:
+    locationConstraint: us-east-1   # ✅ specify region here
+  providerConfigRef:
+    name: aws-provider
+
+
+
+
+You can get resources like this 
+
+kubectl get buckets
